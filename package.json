@@ -1,0 +1,25 @@
+{
+  "name": "miniflags",
+  "version": "1.0.0",
+  "description": "A simple feature flag service built on Cloudflare Workers + Durable Objects",
+  "main": "worker.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "hono": "^4.9.6"
+  },
+  "devDependencies": {
+    "wrangler": "^4.34.0"
+  },
+  "keywords": [
+    "feature-flags",
+    "cloudflare-workers",
+    "durable-objects",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}

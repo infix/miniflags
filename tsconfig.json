@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["ES2020"],
+    "types": ["@cloudflare/workers-types"]
+  },
+  "include": ["worker.ts", "worker-configuration.d.ts"]
+}

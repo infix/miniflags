@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body{font-family:system-ui;background:#0a0a0a;color:#fafafa;padding:2rem;margin:0}
+.container{max-width:800px;margin:0 auto}
+.status{position:fixed;top:1rem;right:1rem;padding:.5rem 1rem;background:#333;border-radius:.25rem}
+.status.on{background:#22c55e}
+.flag{display:flex;align-items:center;gap:1rem;padding:1rem;background:#1a1a1a;margin-bottom:.5rem;border-radius:.5rem}
+.flag-name{flex:1;font-family:monospace}
+button{padding:.5rem 1rem;border:none;border-radius:.25rem;cursor:pointer;color:white}
+.toggle{width:60px;height:30px;background:#333;border-radius:15px;position:relative;cursor:pointer}
+.toggle.on{background:#22c55e}
+.toggle::after{content:'';position:absolute;width:26px;height:26px;background:white;border-radius:50%;top:2px;left:2px;transition:transform .2s}
+.toggle.on::after{transform:translateX(30px)}
+.delete{background:#ef4444}
+.add{background:#3b82f6;padding:.75rem 1.5rem}
+input{flex:1;padding:.75rem;background:#1a1a1a;border:1px solid #333;color:white;border-radius:.25rem}
+.add-form{display:flex;gap:1rem;margin-top:2rem}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="status" id="status">Disconnected</div>
+<h1>Feature Flags</h1>
+<div id="flags"></div>
+<div class="add-form">
+<input id="key" placeholder="Flag name">
+<button class="add" onclick="addFlag()">Add Flag</button>
+</div>
+</div>
+<script>
+let token=localStorage.getItem('api-token')||prompt('Enter API token:');
+if(token)localStorage.setItem('api-token',token);
+let flags={},ws;
+function connect(){
+  ws=new WebSocket(location.origin.replace('http','ws')+'/ws');
+  ws.onopen=()=>{
+    document.getElementById('status').className='status on';
+    document.getElementById('status').textContent='Connected';
+  };
+  ws.onmessage=(e)=>{
+    const d=JSON.parse(e.data);
+    if(d.type==='update')flags[d.key]=d.value;
+    else if(d.type==='delete')delete flags[d.key];
+    render();
+  };
+  ws.onclose=()=>{
+    document.getElementById('status').className='status';
+    document.getElementById('status').textContent='Disconnected';
+    setTimeout(connect,1000);
+  };
+}
+async function loadFlags(){
+  const r=await fetch('/admin/flags',{headers:{'Authorization':'Bearer '+token}});
+  if(!r.ok){localStorage.removeItem('api-token');location.reload();return;}
+  flags=await r.json();
+  render();
+}
+function render(){
+  document.getElementById('flags').innerHTML=Object.entries(flags).map(([k,v])=>
+    `<div class="flag"><span class="flag-name">${k}</span>
+    <div class="toggle ${v?'on':''}" onclick="toggle('${k}',${!v})"></div>
+    <button class="delete" onclick="deleteFlag('${k}')">Delete</button></div>`
+  ).join('');
+}
+async function toggle(k,v){
+  await fetch('/admin/flags/'+k,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({value:v})});
+}
+async function deleteFlag(k){
+  if(confirm('Delete '+k+'?'))
+    await fetch('/admin/flags/'+k,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
+}
+async function addFlag(){
+  const k=document.getElementById('key').value.trim();
+  if(k&&/^[a-z0-9-]+$/.test(k)){
+    await toggle(k,false);
+    document.getElementById('key').value='';
+  }
+}
+connect();
+loadFlags();
+</script>
+</body>
+</html>
