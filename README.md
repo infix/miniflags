@@ -66,4 +66,4 @@ Workers free tier covers 100K requests/day. Durable Objects free tier covers 1M 
 
 MIT
 
-[^1]: ~225 from `wc -l worker.ts client.ts admin.html`
+[^1]: ~223 from `wc -l worker.ts client.ts admin.html`
