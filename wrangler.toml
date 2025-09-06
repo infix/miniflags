@@ -1,6 +1,11 @@
 name = "miniflags"
 main = "worker.ts"
-compatibility_date = "2023-12-01"
+compatibility_date = "2025-09-05"
+
+routes = [{ pattern = "miniflags.workers.dev/*", zone_name = "workers.dev" }]
+
+[placement]
+mode = "smart"
 
 [build]
 command = ""

@@ -1,15 +1,17 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { bearerAuth } from "hono/bearer-auth";
+import { DurableObject } from 'cloudflare:workers'
 import adminHTML from "./admin.html";
 
-export class FlagStore {
+export class FlagStore extends DurableObject<Cloudflare.Env> {
   state: DurableObjectState;
-  app: Hono = new Hono();
+  app = new Hono();
   flags: Record<string, boolean> = {};
-  sessions: Set<WebSocket> = new Set();
+  sessions = new Set<WebSocket>();
 
-  constructor(state: DurableObjectState, env: any) {
+  constructor(state: DurableObjectState, env: Cloudflare.Env) {
+    super(state, env)
     this.state = state;
     this.state.blockConcurrencyWhile(async () => {
       this.flags = (await this.state.storage?.get("flags")) || {};
@@ -33,17 +35,13 @@ export class FlagStore {
       return new Response(null, { status: 101, webSocket: client });
     });
 
-    this.app.get("/api/flags", async (c) => {
-      return c.json(this.flags);
-    });
+    this.app.get("/api/flags", (c) => c.json(this.flags));
 
     this.app.get("/api/flags/:key", async (c) => {
       return c.json({ value: this.flags[c.req.param("key")] ?? false });
     });
 
-    this.app.get("/admin/flags", async (c) => {
-      return c.json(this.flags);
-    });
+    this.app.get("/admin/flags", (c) => c.json(this.flags));
 
     this.app.put("/admin/flags/:key", async (c) => {
       const { value } = await c.req.json();
@@ -89,7 +87,7 @@ export class FlagStore {
 }
 
 export default {
-  async fetch(request: Request, env: any) {
+  async fetch(request: Request, env: Cloudflare.Env) {
     const id = env.FLAGS.idFromName("global");
     const store = env.FLAGS.get(id);
     return store.fetch(request);
